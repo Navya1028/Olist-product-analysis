@@ -44,23 +44,21 @@
 
 ![Category performance](sql%20outputs/Screenshot%202026-07-26%20183954.png)
 
-## Part 2 — Statistics: does delivery timeliness change customer behavior? (`stats.ipynb`)
+Part 2 — Statistics: does delivery timeliness change customer behavior? (stats.ipynb)
 
-Cohorts built via SQL: each customer's **first order** classified as `on_time` or `late` (delivered after the estimated date). Two independent tests against that same split:
+Cohorts built via SQL: each customer's first order classified as on_time or late (delivered after the estimated date). Two independent tests against that same split:
 
-| Test | Outcome | Result |
-|---|---|---|
-| Two-proportion z-test | Repeat purchase within 180 days | **Not significant** (p=0.30). On-time 2.26% vs late 2.08% — a real but tiny gap. Power calculation shows ~99K customers per group would be needed to detect an effect this small at 80% power; the study (85.7K vs 7.6K) was underpowered for it. |
-| Welch's t-test | Review score (1–5) | **Highly significant** (p≈0), large effect (Cohen's d=1.21). On-time avg 4.29★ vs late avg 2.57★. |
+Test	Outcome	Result
+Chi-square test + 95% CI	Repeat purchase within 180 days	Not significant (p=0.30). On-time 2.26% vs late 2.08% — a real but tiny gap; the 95% CI for the difference (−0.15% to +0.52%) includes zero. Power calculation shows ~99K customers per group would be needed to detect an effect this small at 80% power; the study (85.7K vs 7.6K) was underpowered for it.
+Welch's t-test	Review score (1–5)	Highly significant (p≈0), large effect (Cohen's d=1.21). On-time avg 4.29★ vs late avg 2.57★.
 
-**Why report a null result at all?** Because the honest finding is more useful than a forced one: late delivery doesn't measurably change whether someone comes back, but it devastates how they rate the experience. Knowing which is true (and being able to show the power calculation behind the "not significant" call, rather than just eyeballing p>0.05) is the difference between running a test and understanding one.
+Why report a null result at all? Because the honest finding is more useful than a forced one: late delivery doesn't measurably change whether someone comes back, but it devastates how they rate the experience. Knowing which is true (and being able to show the power calculation behind the "not significant" call, rather than just eyeballing p>0.05) is the difference between running a test and understanding one.
 
-**Caveat, stated rather than glossed over:** this is observational, not randomized. Delivery speed correlates with seller, region, and product category — any of which could independently affect review behavior. A randomized delivery-speed experiment (or an instrumental-variable design) would be needed to claim causation, not just association.
+Caveat, stated rather than glossed over: this is observational, not randomized. Delivery speed correlates with seller, region, and product category — any of which could independently affect review behavior. A randomized delivery-speed experiment (or an instrumental-variable design) would be needed to claim causation, not just association.
 
-## Files
-
-- `analysis.sql` — full SQL analysis (funnel, cohorts, RFM, category performance)
-- `olist_product_analytics.sqbpro` — DB Browser for SQLite project file with the queries already executed against the database
-- `stats.ipynb` — hypothesis testing notebook (z-test, t-test, power calculation)
-- `olist_product_analytics.db` — SQLite database, ready to query directly
-- `sql outputs/` — screenshots of each query and its result set
+Files
+analysis.sql — full SQL analysis (funnel, cohorts, RFM, category performance)
+olist_product_analytics.sqbpro — DB Browser for SQLite project file with the queries already executed against the database
+stats.ipynb — hypothesis testing notebook (z-test, t-test, power calculation)
+olist_product_analytics.db — SQLite database, ready to query directly
+sql outputs/ — screenshots of each query and its result set
