@@ -11,7 +11,7 @@
 
 ## Data quality check (before trusting anything downstream)
 
-2,965 orders (~3% of all "delivered" orders) are flagged `delivered` but have no `order_delivered_customer_date`. Every delivery-time and cohort query in this project explicitly filters these out — otherwise they'd silently inflate or corrupt every downstream funnel and delivery-time metric.
+8 orders (~0.01% of all "delivered" orders) are flagged `delivered` but have no `order_delivered_customer_date`. It's a small number, but every delivery-time and cohort query in this project still explicitly filters these out — otherwise they'd silently corrupt any query that computes delivery time or joins on that field.
 
 ## Part 1 — SQL: Funnel, cohorts, RFM (`analysis.sql`)
 
@@ -22,7 +22,9 @@
 - **RFM segmentation**: `NTILE(4)` on recency, frequency, monetary value → Champions / Loyal / At-Risk / Lost segments
 - **Category performance**: revenue-ranked categories joined against average review score
 
-## Part 2 — Statistics: does delivery timeliness change customer behavior? (`stats_analysis.py`)
+Query results are saved as screenshots in [`sql outputs/`](sql%20outputs/), and `olist_product_analytics.sqbpro` is the DB Browser for SQLite project file with every query already run against the database — open it in [DB Browser for SQLite](https://sqlitebrowser.org/) to see all six analyses with their results in place, no re-running required.
+
+## Part 2 — Statistics: does delivery timeliness change customer behavior? (`stats.ipynb`)
 
 Cohorts built via SQL: each customer's **first order** classified as `on_time` or `late` (delivered after the estimated date). Two independent tests against that same split:
 
@@ -38,6 +40,7 @@ Cohorts built via SQL: each customer's **first order** classified as `on_time` o
 ## Files
 
 - `analysis.sql` — full SQL analysis (funnel, cohorts, RFM, category performance)
-- `stats_analysis.py` — hypothesis testing module (z-test, t-test, power calculation)
+- `olist_product_analytics.sqbpro` — DB Browser for SQLite project file with the queries already executed against the database
+- `stats.ipynb` — hypothesis testing notebook (z-test, t-test, power calculation)
 - `olist_product_analytics.db` — SQLite database, ready to query directly
-"# Olist-product-analysis" 
+- `sql outputs/` — screenshots of each query and its result set

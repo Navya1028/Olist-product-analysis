@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="olist_product_analytics.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="1646"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="0" parent="0"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="orders" custom_title="0" dock_id="1" table="4,6:mainorders"/><dock_state state="000000ff00000000fd00000001000000020000013a000002aefc0100000001fb000000160064006f0063006b00420072006f007700730065003101000000000000013a0000013300ffffff0000013a0000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings><table schema="main" name="category_translation" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="300"/><column index="2" value="300"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="customers" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="257"/><column index="2" value="257"/><column index="3" value="156"/><column index="4" value="202"/><column index="5" value="95"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="order_items" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="257"/><column index="2" value="87"/><column index="3" value="257"/><column index="4" value="257"/><column index="5" value="156"/><column index="6" value="62"/><column index="7" value="83"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="orders" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="257"/><column index="2" value="257"/><column index="3" value="93"/><column index="4" value="162"/><column index="5" value="156"/><column index="6" value="172"/><column index="7" value="187"/><column index="8" value="183"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="payments" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="257"/><column index="2" value="121"/><column index="3" value="93"/><column index="4" value="132"/><column index="5" value="94"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="products" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="257"/><column index="2" value="300"/><column index="3" value="131"/><column index="4" value="162"/><column index="5" value="121"/><column index="6" value="110"/><column index="7" value="117"/><column index="8" value="117"/><column index="9" value="113"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="SQL 1*">SELECT
+    order_status,
+    COUNT(*) AS total_orders,
+    SUM(CASE WHEN order_delivered_customer_date IS NULL
+              OR order_delivered_customer_date = '' THEN 1 ELSE 0 END) AS missing_delivery_date
+FROM orders
+GROUP BY order_status
+ORDER BY total_orders DESC;</sql><sql name="SQL 2*">WITH funnel_base AS (
+    SELECT
+        order_id,
+        order_status,
+        order_purchase_timestamp,
+        order_approved_at,
+        order_delivered_carrier_date,
+        order_delivered_customer_date,
+        CASE WHEN order_approved_at != '' THEN 1 ELSE 0 END AS reached_approved,
+        CASE WHEN order_delivered_carrier_date != '' THEN 1 ELSE 0 END AS reached_shipped,
+        CASE WHEN order_delivered_customer_date != '' THEN 1 ELSE 0 END AS reached_delivered
+    FROM orders
+)
+SELECT
+    COUNT(*) AS orders_placed,
+    SUM(reached_approved) AS reached_approved,
+    ROUND(100.0 * SUM(reached_approved) / COUNT(*), 1) AS pct_approved,
+    SUM(reached_shipped) AS reached_shipped,
+    ROUND(100.0 * SUM(reached_shipped) / COUNT(*), 1) AS pct_shipped,
+    SUM(reached_delivered) AS reached_delivered,
+    ROUND(100.0 * SUM(reached_delivered) / COUNT(*), 1) AS pct_delivered
+FROM funnel_base;
+</sql><sql name="SQL 3*">WITH delivery_times AS (
+    SELECT
+        c.customer_state,
+        o.order_id,
+        julianday(o.order_delivered_customer_date) - julianday(o.order_purchase_timestamp) AS delivery_days
+    FROM orders o
+    JOIN customers c ON c.customer_id = o.customer_id
+    WHERE o.order_delivered_customer_date != ''
+),
+state_agg AS (
+    SELECT
+        customer_state,
+        COUNT(*) AS delivered_orders,
+        ROUND(AVG(delivery_days), 1) AS avg_delivery_days
+    FROM delivery_times
+    GROUP BY customer_state
+)
+SELECT
+    customer_state,
+    delivered_orders,
+    avg_delivery_days,
+    RANK() OVER (ORDER BY avg_delivery_days DESC) AS slowest_rank
+FROM state_agg
+WHERE delivered_orders &gt;= 30
+ORDER BY avg_delivery_days DESC
+LIMIT 10;
+
+</sql><sql name="SQL 4*">WITH customer_orders AS (
+    SELECT
+        c.customer_unique_id,
+        o.order_id,
+        o.order_purchase_timestamp,
+        ROW_NUMBER() OVER (
+            PARTITION BY c.customer_unique_id
+            ORDER BY o.order_purchase_timestamp
+        ) AS order_seq
+    FROM orders o
+    JOIN customers c ON c.customer_id = o.customer_id
+    WHERE o.order_status NOT IN ('canceled', 'unavailable')
+),
+first_orders AS (
+    SELECT
+        customer_unique_id,
+        order_purchase_timestamp AS first_order_ts,
+        strftime('%Y-%m', order_purchase_timestamp) AS cohort_month
+    FROM customer_orders
+    WHERE order_seq = 1
+),
+repeat_flags AS (
+    SELECT
+        f.customer_unique_id,
+        f.cohort_month,
+        MAX(CASE
+            WHEN co.order_seq = 2
+             AND julianday(co.order_purchase_timestamp) - julianday(f.first_order_ts) &lt;= 90
+            THEN 1 ELSE 0 END) AS repeated_within_90d
+    FROM first_orders f
+    LEFT JOIN customer_orders co
+        ON co.customer_unique_id = f.customer_unique_id
+    GROUP BY f.customer_unique_id, f.cohort_month
+)
+SELECT
+    cohort_month,
+    COUNT(*) AS cohort_size,
+    SUM(repeated_within_90d) AS repeat_customers_90d,
+    ROUND(100.0 * SUM(repeated_within_90d) / COUNT(*), 2) AS repeat_rate_90d_pct
+FROM repeat_flags
+GROUP BY cohort_month
+ORDER BY cohort_month;</sql><sql name="SQL 5*">/* ----------------------------------------------------------------------------
+   4. TIME BETWEEN ORDERS FOR REPEAT CUSTOMERS (LAG window function)
+   ---------------------------------------------------------------------------- */
+WITH customer_orders AS (
+    SELECT
+        c.customer_unique_id,
+        o.order_purchase_timestamp,
+        ROW_NUMBER() OVER (
+            PARTITION BY c.customer_unique_id
+            ORDER BY o.order_purchase_timestamp
+        ) AS order_seq
+    FROM orders o
+    JOIN customers c ON c.customer_id = o.customer_id
+    WHERE o.order_status NOT IN ('canceled', 'unavailable')
+),
+gaps AS (
+    SELECT
+        customer_unique_id,
+        order_seq,
+        order_purchase_timestamp,
+        LAG(order_purchase_timestamp) OVER (
+            PARTITION BY customer_unique_id ORDER BY order_seq
+        ) AS prev_order_ts
+    FROM customer_orders
+)
+SELECT
+    ROUND(AVG(julianday(order_purchase_timestamp) - julianday(prev_order_ts)), 1) AS avg_days_between_orders,
+    COUNT(*) AS repeat_order_events
+FROM gaps
+WHERE prev_order_ts IS NOT NULL;
+
+</sql><sql name="SQL 7*">WITH customer_orders AS (
+    SELECT
+        c.customer_unique_id,
+        o.order_id,
+        o.order_purchase_timestamp
+    FROM orders o
+    JOIN customers c ON c.customer_id = o.customer_id
+    WHERE o.order_status NOT IN ('canceled', 'unavailable')
+),
+customer_value AS (
+    SELECT
+        co.customer_unique_id,
+        COUNT(DISTINCT co.order_id) AS frequency,
+        MAX(co.order_purchase_timestamp) AS last_order_ts,
+        SUM(p.payment_value) AS monetary
+    FROM customer_orders co
+    JOIN payments p ON p.order_id = co.order_id
+    GROUP BY co.customer_unique_id
+),
+max_date AS (SELECT MAX(order_purchase_timestamp) AS ref_date FROM orders),
+rfm_base AS (
+    SELECT
+        cv.customer_unique_id,
+        julianday((SELECT ref_date FROM max_date)) - julianday(cv.last_order_ts) AS recency_days,
+        cv.frequency,
+        cv.monetary
+    FROM customer_value cv
+),
+rfm_scored AS (
+    SELECT
+        customer_unique_id,
+        recency_days,
+        frequency,
+        monetary,
+        NTILE(4) OVER (ORDER BY recency_days ASC)  AS r_score,   -- 4 = most recent
+        NTILE(4) OVER (ORDER BY frequency DESC)    AS f_score,   -- 4 = most frequent
+        NTILE(4) OVER (ORDER BY monetary DESC)     AS m_score    -- 4 = highest spend
+    FROM rfm_base
+)
+SELECT
+    CASE
+        WHEN r_score = 4 AND f_score = 4 AND m_score = 4 THEN 'Champions'
+        WHEN r_score &gt;= 3 AND f_score &gt;= 3 THEN 'Loyal'
+        WHEN r_score = 4 AND f_score &lt;= 2 THEN 'New / Recent'
+        WHEN r_score &lt;= 2 AND f_score &gt;= 3 THEN 'At Risk (was loyal)'
+        WHEN r_score = 1 AND f_score = 1 THEN 'Lost'
+        ELSE 'Other'
+    END AS segment,
+    COUNT(*) AS customers,
+    ROUND(AVG(monetary), 2) AS avg_spend
+FROM rfm_scored
+GROUP BY segment
+ORDER BY customers DESC;
+
+</sql><sql name="SQL 6*">WITH category_sales AS (
+    SELECT
+        ct.product_category_name_english AS category,
+        oi.order_id,
+        oi.price
+    FROM order_items oi
+    JOIN products p ON p.product_id = oi.product_id
+    JOIN category_translation ct ON ct.product_category_name = p.product_category_name
+),
+category_reviews AS (
+    SELECT
+        cs.category,
+        AVG(r.review_score) AS avg_review_score
+    FROM category_sales cs
+    JOIN reviews r ON r.order_id = cs.order_id
+    GROUP BY cs.category
+),
+category_revenue AS (
+    SELECT
+        category,
+        COUNT(DISTINCT order_id) AS orders,
+        ROUND(SUM(price), 2) AS revenue
+    FROM category_sales
+    GROUP BY category
+)
+SELECT
+    cr.category,
+    cr.orders,
+    cr.revenue,
+    ROUND(crev.avg_review_score, 2) AS avg_review_score,
+    RANK() OVER (ORDER BY cr.revenue DESC) AS revenue_rank
+FROM category_revenue cr
+JOIN category_reviews crev ON crev.category = cr.category
+ORDER BY cr.revenue DESC
+LIMIT 10;
+</sql><current_tab id="6"/></tab_sql></sqlb_project>
