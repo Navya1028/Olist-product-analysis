@@ -1,6 +1,6 @@
 # Olist Product Analytics: Funnel, Retention & Delivery-Experience Impact
 
-**Dataset:** link: https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
+**Dataset:** link:https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
 100k real e-commerce orders, Sep 2016–Oct 2018 (Olist, Brazil) — 8 relational tables (orders, customers, order items, payments, reviews, products, sellers, category translation)
 **Stack:** SQLite (SQL), Python (scipy) for inferential statistics
 
@@ -14,16 +14,35 @@
 
 8 orders (~0.01% of all "delivered" orders) are flagged `delivered` but have no `order_delivered_customer_date`. It's a small number, but every delivery-time and cohort query in this project still explicitly filters these out — otherwise they'd silently corrupt any query that computes delivery time or joins on that field.
 
+![Data quality check](sql%20outputs/Screenshot%202026-07-26%20183517.png)
+
 ## Part 1 — SQL: Funnel, cohorts, RFM (`analysis.sql`)
 
-- **Order-to-delivery funnel**: conversion rate at each stage (purchase → approved → carrier → delivered)
-- **Delivery time by state**: window-ranked (`RANK() OVER`) to surface the slowest regions
-- **Monthly acquisition cohorts**: CTE-chained (`customer_orders → first_orders → repeat_flags`) to compute 90-day repeat-purchase rate per signup month
-- **Time between orders**: `LAG()` window function over each customer's order sequence
-- **RFM segmentation**: `NTILE(4)` on recency, frequency, monetary value → Champions / Loyal / At-Risk / Lost segments
-- **Category performance**: revenue-ranked categories joined against average review score
+`olist_product_analytics.sqbpro` is the DB Browser for SQLite project file with every query below already run against the database — open it in [DB Browser for SQLite](https://sqlitebrowser.org/) to explore all six analyses with their results in place, no re-running required. Screenshots of each result set are below and also saved individually in [`sql outputs/`](sql%20outputs/).
 
-Query results are saved as screenshots in [`sql outputs/`](sql%20outputs/), and `olist_product_analytics.sqbpro` is the DB Browser for SQLite project file with every query already run against the database — open it in [DB Browser for SQLite](https://sqlitebrowser.org/) to see all six analyses with their results in place, no re-running required.
+**Order-to-delivery funnel**: conversion rate at each stage (purchase → approved → carrier → delivered)
+
+![Order-to-delivery funnel](sql%20outputs/Screenshot%202026-07-26%20183700.png)
+
+**Delivery time by state**: window-ranked (`RANK() OVER`) to surface the slowest regions
+
+![Delivery time by state](sql%20outputs/Screenshot%202026-07-26%20183747.png)
+
+**Monthly acquisition cohorts**: CTE-chained (`customer_orders → first_orders → repeat_flags`) to compute 90-day repeat-purchase rate per signup month
+
+![Monthly acquisition cohorts](sql%20outputs/Screenshot%202026-07-26%20183814.png)
+
+**Time between orders**: `LAG()` window function over each customer's order sequence
+
+![Time between orders](sql%20outputs/Screenshot%202026-07-26%20183840.png)
+
+**RFM segmentation**: `NTILE(4)` on recency, frequency, monetary value → Champions / Loyal / At-Risk / Lost segments
+
+![RFM segmentation](sql%20outputs/Screenshot%202026-07-26%20183908.png)
+
+**Category performance**: revenue-ranked categories joined against average review score
+
+![Category performance](sql%20outputs/Screenshot%202026-07-26%20183954.png)
 
 ## Part 2 — Statistics: does delivery timeliness change customer behavior? (`stats.ipynb`)
 
