@@ -1,6 +1,7 @@
 # Olist Product Analytics: Funnel, Retention & Delivery-Experience Impact
 
-**Dataset:** 99,441 real e-commerce orders, Sep 2016–Oct 2018 (Olist, Brazil) — 8 relational tables (orders, customers, order items, payments, reviews, products, sellers, category translation)
+**Dataset:** link: https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
+100k real e-commerce orders, Sep 2016–Oct 2018 (Olist, Brazil) — 8 relational tables (orders, customers, order items, payments, reviews, products, sellers, category translation)
 **Stack:** SQLite (SQL), Python (scipy) for inferential statistics
 
 ## What this project answers
