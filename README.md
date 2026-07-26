@@ -1,7 +1,7 @@
 # Olist Product Analytics: Funnel, Retention & Delivery-Experience Impact
 
 **Dataset:** link:https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
-100k real e-commerce orders, Sep 2016–Oct 2018 (Olist, Brazil) — 8 relational tables (orders, customers, order items, payments, reviews, products, sellers, category translation)
+100k real e-commerce orders, Sep 2016–Oct 2018 (Olist, Brazil) - 8 relational tables (orders, customers, order items, payments, reviews, products, sellers, category translation)
 **Stack:** SQLite (SQL), Python (scipy) for inferential statistics
 
 ## What this project answers
@@ -12,7 +12,7 @@
 
 ## Data quality check (before trusting anything downstream)
 
-8 orders (~0.01% of all "delivered" orders) are flagged `delivered` but have no `order_delivered_customer_date`. It's a small number, but every delivery-time and cohort query in this project still explicitly filters these out — otherwise they'd silently corrupt any query that computes delivery time or joins on that field.
+8 orders (~0.01% of all "delivered" orders) are flagged `delivered` but have no `order_delivered_customer_date`. It's a small number, but every delivery-time and cohort query in this project still explicitly filters these out otherwise they'd silently corrupt any query that computes delivery time or joins on that field.
 
 ![Data quality check](sql%20outputs/Screenshot%202026-07-26%20183517.png)
 
